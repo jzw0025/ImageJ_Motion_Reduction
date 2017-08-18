@@ -1,0 +1,14 @@
+(1) The region of interest tool reference (ImageJ):
+https://imagej.nih.gov/ij/developer/api/ij/gui/PolygonRoi.html#getFloatPolygon--(2) The ImageJ sample code:
+https://imagej.nih.gov/ij/plugins/
+(3) Developing plugin tutorial:
+https://imagej.net/Developing_Plugins_for_ImageJ_1.x
+(4) Github Processing Pixel Example:
+https://github.com/imagej/example-legacy-plugin/blob/master/src/main/java/com/mycompany/imagej/Process_Pixels.java
+(5) Python VTK examples.
+http://www.vtk.org/Wiki/VTK/Examples/Python#Input
+(6) Jupter for ImageJ
+https://nbviewer.jupyter.org/github/imagej/tutorials/blob/master/notebooks/1_-_Using_ImageJ/2_-_Introduction_to_ImageJ_Ops.ipynb
+(7) Tensor Notation reference
+http://www.continuummechanics.org/tensornotationbasic.html
+

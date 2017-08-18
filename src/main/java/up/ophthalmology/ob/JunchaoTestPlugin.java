@@ -8,7 +8,6 @@
 
 package up.ophthalmology.ob;
 
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +24,7 @@ import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.gui.WaitForUserDialog;
 import ij.plugin.filter.PlugInFilter;
+import ij.process.ByteProcessor;
 import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 
@@ -37,8 +37,8 @@ import ij.process.ImageProcessor;
 public class JunchaoTestPlugin implements PlugInFilter {
 	protected ImagePlus image;
 	// image property members
-	private int width;
-	private int height;
+	private static int width;
+	private static int height;
 	
 	// plugin parameters
 	public double value;
@@ -90,27 +90,18 @@ public class JunchaoTestPlugin implements PlugInFilter {
 					}
 				}
 				
-			}
-			
-//		for(int i=0; i<weights.length; i++) {
-//			System.out.println("center: "+ center + "weights: "+ weights[i]);
-//		}
-			
+			}		
 
 		}else {
 			for(int i=0; i<len0; i++) {
-				weights[i] = 1.0/len0;
+				weights[i] = 1.0/len0; // if not weighted, the weighted is 1/N
 			}
 		}
-		//System.out.println("new mean...");
+
 		float sum = 0;
 		for(int i=start; i<end+1; i++) {
-			sum += weights[i-start]*input[i];
-//			if(weighted) {
-//				System.out.println("counted: " + input[i]+" / Gaussian weigted: " + weights[i-start]*input[i]);
-//			}
+			sum += weights[i-start]*input[i]; //convolve the weights with input;
 		}
-		//System.out.println("mean: " + sum/len);
 		return sum;
 	}
 	
@@ -148,128 +139,87 @@ public class JunchaoTestPlugin implements PlugInFilter {
 		// get width and height
 		width = ip.getWidth();
 		height = ip.getHeight();
+		
+		double dc_level = 255;
+		double cutoff = 50;
+        ByteProcessor img = new ByteProcessor(width,height);
+        double value = 0;
+        double distance = 0;
+        int sizex = img.getWidth();
+        int sizey = img.getHeight();
+        int xcenter = (sizex/2)+1;
+        int ycenter = (sizey/2)+1;
+        for (int y = 0; y < sizey; y++){
+            for (int x = 0; x < sizex; x++){
+                distance = Math.abs(x-xcenter)*Math.abs(x-xcenter)+Math.abs(y-ycenter)*Math.abs(y-ycenter);
+                distance = Math.sqrt(distance);
+                value = dc_level*Math.exp((-1*distance*distance)/(1.442695*cutoff*cutoff));
+                img.putPixelValue(x,y,value);
+
+            }
+        }
+
+         ImagePlus img_filter2 = new ImagePlus("2D Filter",img);
+         img_filter2.show();
 
 		if (showDialog()) {
 			System.out.println(ip);
-			//process(ip);
-			//process(image);
+			//process(ip); // this process the single image slice
+			//process(image); // this process the image stacks
 			new WaitForUserDialog("User Input Required","Select the Polygon Line, then click OK.").show();
-			Roi roi = image.getRoi();
+			
+			Roi roi = image.getRoi(); // filtered image
+			
 			if (!(roi!=null && roi.getType()==Roi.POLYLINE) )
 				{IJ.error("Straight line selection required."); return;}
-			System.out.println("the input detected!");
-			System.out.println(roi.getType());
-			System.out.println(((PolygonRoi) roi).getNCoordinates());
-			//int numP = ((PolygonRoi) roi).getNCoordinates(); // number of roi points
+			
 			FloatPolygon fp_non_inter = ((PolygonRoi) roi).getFloatPolygon();
+			
 			float[] grid_xc = fp_non_inter.xpoints;
 			float[] grid_yc = fp_non_inter.ypoints;
 			float[] grid_yc_mean = new float[grid_yc.length];
-			
-// 			for(int i=0; i< grid_xc.length; i++) {
-// 				//System.out.println(grid_xc[i] + " / " + grid_yc[i]);
-// 			}	
 			
 			int begin1 = 0;
 			int end1 = 0;
 			int center1 = 0;
 			for(int i=0; i<grid_yc_mean.length; i++) {
 				center1 = i;
-				begin1 = i - (int) value >= 0 ? i-(int) value:0; // radius
-				end1 = i + (int) value < grid_yc.length ? i + (int) value: grid_yc.length-1;
-				//System.out.println("total size: " + grid_yc.length);
-				grid_yc_mean[i] = mean(grid_yc, begin1, center1, end1, true, 1.0);
-				//System.out.println("avg: "+ grid_yc_mean[i] + "non_avg:" + grid_yc[i]);
+				begin1 = i - (int) value >= 0 ? i-(int) value:0; // radius selection: left side condition
+				end1 = i + (int) value < grid_yc.length ? i + (int) value: grid_yc.length-1; // radius selection: right side condition
+				grid_yc_mean[i] = mean(grid_yc, begin1, center1, end1, true, 1.0); // compute the smoothed points based on the input grid points
 			}
 			double[] grid_yc_mean_disp = new double[grid_yc_mean.length];
 			for(int i=0; i<grid_yc_mean.length; i++) {
-				grid_yc_mean_disp[i] = grid_yc_mean[i] - grid_yc[i];
-				//System.out.println(i +" /displacement: " + grid_yc_mean[i] );
+				grid_yc_mean_disp[i] = grid_yc_mean[i] - grid_yc[i]; // compute the displacement based the grid point y coordinate difference
 			}
 			
 			double[] grid_xc_double = float2double(grid_xc);
-			double[] grid_yc_mean_double = float2double(grid_yc_mean);
+			//double[] grid_yc_mean_double = float2double(grid_yc_mean);
 			
 			double[] pixel_x = new double[width];
 			for(int i=0; i<width; i++) { 
 				pixel_x[i] = i; // creating linear interpolation bases;
 			}
 			
-			System.out.println("establishing interpolation...");
+			// establishing interpolation...
 			double[] pixel_y = new double[pixel_x.length];
  			try {
-				pixel_y = linearInterp(grid_xc_double, grid_yc_mean_disp,pixel_x);
-//	 			for(int i=0; i< pixel_x.length; i++) {
-//	 				System.out.println(i + " / " + pixel_x[i] + " / " + pixel_y[i]);
-//	 			}	
+				pixel_y = linearInterp(grid_xc_double, grid_yc_mean_disp, pixel_x);
 			} catch (ArgumentOutsideDomainException e) {
-				// TODO Auto-generated catch block
 				System.out.println("the input x is out of range..." );
 				e.printStackTrace();
 			}
  			
-//			for(int i=0; i<width; i++) { 
-//				System.out.println("pixel_y: " + pixel_y[i]);			
-//			}
- 			
  			float [] pixel_x_float = double2float(pixel_x);
  			float [] pixel_y_float = double2float(pixel_y);
- 			
-			FloatPolygon fp = ((PolygonRoi) roi).getInterpolatedPolygon(2.0, true);
-			float[] xc = fp.xpoints;
-			float[] yc = fp.ypoints; 
-			// stationary average
-			double[] yc_avg = new double[yc.length];
-			double[] xc_ave_double = float2double(xc);
-			double[] yc_ave_double = float2double(yc);
 			
-			//Mean mv = new Mean();
-			int begin = 0;
-			int end = 0;
-			int center = 0;
-			System.out.println("input radius: " + value);
-			System.out.println("interpolated len:" + yc_ave_double.length);
-			for(int i=0; i<yc_ave_double.length; i++) {
-				center = i;
-				begin = i - (int) value >= 0 ? i-(int) value:0; // radius
-				end = i + (int) value < yc_ave_double.length ? i + (int) value: yc_ave_double.length-1;
-				//System.out.println("total size: " + yc_ave_double.length);
-				yc_avg[i] = mean(yc, begin, i, end, true, 2.0);
-				//System.out.println("avg: "+ yc_avg[i] + "non_avg:" + yc[i]);
-			}
-			
-//			int [] xc_int = new int[xc.length];
-//			int [] yc_int = new int[yc.length];
-// 			for(int i=0; i<xc.length; i++) {
-// 				xc_int[i] = (int) xc[i];
-// 				yc_int[i] = (int) yc[i];
-//				//System.out.println("x:" + xc[i] + "/ y:" + yc[i]); // print out the int coordinates
-//			}
-			
-			float[] xc_ave_float = double2float(xc_ave_double);
-			float[] yc_ave_float = double2float(yc_avg); // this yc_avg is the value after averaging
-			
- 			PolygonRoi drawline = new PolygonRoi(grid_xc, grid_yc_mean,Roi.POLYLINE);
- 			//Color c1 = new Color(255, 0, 0);
- 			//drawline.setColor(c1);
+ 			PolygonRoi drawline = new PolygonRoi(grid_xc, grid_yc_mean, Roi.POLYLINE);
 			drawline.drawPixels(ip); // ploting the smoothed line onto current image.
-			//PolygonRoi drawline2 = new PolygonRoi(xc_ave_float,yc_ave_float,roi.POLYLINE);
- 			//System.out.println("showing the image...");
-			//drawline2.drawPixels(ip);
-			// filling the map
-			
-//			for(int j=0; j<xc_ave_float.length; j++) {
-//				int location = (int) xc_ave_float[j];
-//				int move = (int) yc_ave_float[j] - (int) yc[j];
-//				//System.out.println(location +"/"+ move);
-//				displacement.put(location, move);
-//			}
 			
 			for(int i=0; i<pixel_x_float.length; i++) {
 				int location = Math.round(pixel_x_float[i]);
 				int move = Math.round(pixel_y_float[i]);
-				System.out.println(location +"//"+ move);
-				displacement.put(location, move);
+				displacement.put(location, move); // put pixel displacement into the hashmap
 			}
 			
 			process(image);
@@ -281,8 +231,8 @@ public class JunchaoTestPlugin implements PlugInFilter {
 		GenericDialog gd = new GenericDialog("Process pixels");
 
 		// default value is 0.00, 2 digits right of the decimal point
-		gd.addNumericField("Radius", 0.00, 2);
-		gd.addStringField("name", "Test.v1.0");
+		gd.addNumericField("Smooth Radius", 0.00,  2);
+		gd.addStringField("Version", "Test.v1.0");
 
 		gd.showDialog();
 		if (gd.wasCanceled())
@@ -320,7 +270,6 @@ public class JunchaoTestPlugin implements PlugInFilter {
 
 	// Select processing method depending on image type
 	public void process(ImageProcessor ip) {
-		//System.out.println("Image ip input!");
 		int type = image.getType();
 		if (type == ImagePlus.GRAY8)
 			process( (byte[]) ip.getPixels() );
@@ -337,19 +286,15 @@ public class JunchaoTestPlugin implements PlugInFilter {
 
 	// processing of GRAY8 images
 	public void process(byte[] pixels) {
-		//System.out.println("Image GRAY8 Detected!");
-		//System.out.println(width*height);
 		byte[] pixels_copy = new byte[width*height];
 		for(int i=0;i<width*height; i++) {
 			pixels_copy[i] = 0;
 		}
-		
 		for (int y=10; y < height-10; y++) {
 			for (int x=10; x < width-10; x++) {
 				// process each pixel of the line
 				// example: add 'number' to each pixel
 				int pixel_displacement = displacement.get(x);
-				//System.out.println(pixel_displacement);
 				pixels_copy[x + y * width] = pixels[x + y * width - pixel_displacement*width];
 			}
 		}
@@ -360,46 +305,54 @@ public class JunchaoTestPlugin implements PlugInFilter {
 
 	// processing of GRAY16 images
 	public void process(short[] pixels) {
-		System.out.println("Image GRAY16 Detected!");
-		for (int y=0; y < height; y++) {
-			for (int x=0; x < width; x++) {
+		short[] pixels_copy = new short[width*height];
+		for(int i=0;i<width*height; i++) {
+			pixels_copy[i] = 0;
+		}
+		for (int y=10; y < height-10; y++) {
+			for (int x=10; x < width-10; x++) {
 				// process each pixel of the line
 				// example: add 'number' to each pixel
-				pixels[x + y * width] = pixels[x + y * width+10*width];
+				int pixel_displacement = displacement.get(x);
+				pixels_copy[x + y * width] = pixels[x + y * width - pixel_displacement*width];
 			}
+		}
+		for(int k=0; k<width*height; k++) {
+			pixels[k] = pixels_copy[k];
 		}
 	}
 
 	// processing of GRAY32 images
 	public void process(float[] pixels) {
-		System.out.println("Image GRAY32 Detected!");
-		for (int y=0; y < height; y++) {
-			for (int x=0; x < width; x++) {
+		float[] pixels_copy = new float[width*height];
+		for(int i=0;i<width*height; i++) {
+			pixels_copy[i] = 0;
+		}
+		for (int y=10; y < height-10; y++) {
+			for (int x=10; x < width-10; x++) {
 				// process each pixel of the line
 				// example: add 'number' to each pixel
-				pixels[x + y * width] += (float)value;
+				int pixel_displacement = displacement.get(x);
+				pixels_copy[x + y * width] = pixels[x + y * width - pixel_displacement*width];
 			}
+		}
+		for(int k=0; k<width*height; k++) {
+			pixels[k] = pixels_copy[k];
 		}
 	}
 
 	// processing of COLOR_RGB images
 	public void process(int[] pixels) {
-		//System.out.println("Image COLOR_RGB Detected!");
-		 // save a copy
-		System.out.println(width*height);
 		int[] pixels_copy = new int[width*height];
 		for(int i=0;i<width*height; i++) {
 			pixels_copy[i] = 0;
 		}
-		
-			for (int y=40; y < height-40; y++) {
-					for (int x=40; x < width-40; x++) {
+		for (int y=10; y < height-10; y++) {
+			for (int x=10; x < width-10; x++) {
 				// process each pixel of the line
 				// example: add 'number' to each pixel
-				//System.out.println(pixels.length);
-				//System.out.println(pixels_copy.length);
-				//System.out.println(x + " / " + y);
-				pixels_copy[x + y * width] = pixels[x + y*width-10*width];
+				int pixel_displacement = displacement.get(x);
+				pixels_copy[x + y * width] = pixels[x + y * width - pixel_displacement*width];
 			}
 		}
 		for(int k=0; k<width*height; k++) {
@@ -434,9 +387,12 @@ public class JunchaoTestPlugin implements PlugInFilter {
 
 		// open the Clown sample
 		//ImagePlus image = IJ.openImage("http://imagej.net/images/clown.jpg");
-		ImagePlus image = IJ.openImage("/Users/junchaowei/Dropbox/try/acute3_OD_V_3x3_0_0001016_reslice-1.tif");
+		//ImagePlus image = IJ.openImage("/Users/junchaowei/Dropbox/try/acute3_OD_V_3x3_0_0001016_reslice-1.tif");
+		
+		ImagePlus image = IJ.openImage();
 		image.show();
-		System.out.println(image);
+		
+		//System.out.println(image);
 		// run the plugin
 		IJ.runPlugIn(clazz.getName(), "");
 	}
