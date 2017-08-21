@@ -14,7 +14,9 @@ import java.util.Map;
 import org.apache.commons.math.ArgumentOutsideDomainException;
 import org.apache.commons.math.analysis.interpolation.LinearInterpolator;
 import org.apache.commons.math.analysis.polynomials.PolynomialSplineFunction;
-import org.python.modules.math;
+
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
 
 import ij.IJ;
 import ij.ImageJ;
@@ -23,12 +25,10 @@ import ij.gui.GenericDialog;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.gui.WaitForUserDialog;
-import ij.plugin.filter.PlugInFilter;
-import ij.process.ByteProcessor;
+import ij.plugin.filter.GaussianBlur;
+//import ij.plugin.filter.PlugInFilter;
 import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
-import net.imagej.ops.Ops.Copy.Img;
-import ij.plugin.filter.GaussianBlur;
 
 /**
  * A template for processing each pixel of either
@@ -36,7 +36,9 @@ import ij.plugin.filter.GaussianBlur;
  *
  * @author Junchao Wei 08/15/2017
  */
-public class JunchaoTestPlugin implements PlugInFilter {
+
+@Plugin(type = Command.class, menuPath = "Plugins>JunchaoTestPlugin")
+public class JunchaoTestPlugin implements Command{
 	protected ImagePlus image;
 	private ImageProcessor copy_image; //  ImageProcess 'ip' to create ImagePlus image
 	private ImagePlus marking_image;   // ImageProcess 'copy_image' to create ImagePlus marking_image
@@ -49,16 +51,15 @@ public class JunchaoTestPlugin implements PlugInFilter {
 	public String name;
 	public Map<Integer, Integer> displacement = new HashMap<Integer, Integer>();
 
-	@Override
-	public int setup(String arg, ImagePlus imp) {
-		if (arg.equals("about")) {
-			showAbout();
-			return DONE;
-		}
-
-		image = imp;
-		return DOES_8G | DOES_16 | DOES_32 | DOES_RGB;
-	}
+//	public int setup(String arg, ImagePlus imp) {
+//		if (arg.equals("about")) {
+//			showAbout();
+//			return DONE;
+//		}
+//
+//		image = imp;
+//		return DOES_8G | DOES_16 | DOES_32 | DOES_RGB;
+//	}
 	
 	private float mean(float[] input, int start, int center, int end, boolean weighted, double sigma) {
 		/* this method calculates the mean of given array*/
@@ -68,7 +69,7 @@ public class JunchaoTestPlugin implements PlugInFilter {
 		if (weighted) {
 			if (center-start == end-center) {
 				for(int i=0; i<len0; i++) {// Centered condition
-					weights[i] = 1/Math.sqrt(2*Math.PI)*math.exp(-1.0* math.pow((i+start-center),2)/2*var);
+					weights[i] = 1/Math.sqrt(2*Math.PI)*Math.exp(-1.0* Math.pow((i+start-center),2)/2*var);
 					//System.out.println(weights[i]);
 					// Centered condition
 				} 
@@ -77,20 +78,20 @@ public class JunchaoTestPlugin implements PlugInFilter {
 					if (center-start > end-center) {
 						if(i+start-center < center - end) { // short radius = center - end
 							System.out.println(center);
-							weights[i] = 2/Math.sqrt(2*Math.PI)*math.exp(-1.0* math.pow((i+start-center),2)/2*var);
+							weights[i] = 2/Math.sqrt(2*Math.PI)*Math.exp(-1.0* Math.pow((i+start-center),2)/2*var);
 						} else {
-							weights[i] = 1/Math.sqrt(2*Math.PI)*math.exp(-1.0* math.pow((i+start-center),2)/2*var);
+							weights[i] = 1/Math.sqrt(2*Math.PI)*Math.exp(-1.0* Math.pow((i+start-center),2)/2*var);
 						}
 					}else if(center-start < end-center) {
 						if(i+start-center > center - start) { // short radius = center - end
 							System.out.println(center);
-							weights[i] = 2/Math.sqrt(2*Math.PI)*math.exp(-1.0* math.pow((i+start-center),2)/2*var);
+							weights[i] = 2/Math.sqrt(2*Math.PI)*Math.exp(-1.0* Math.pow((i+start-center),2)/2*var);
 						} else {
-							weights[i] = 1/Math.sqrt(2*Math.PI)*math.exp(-1.0* math.pow((i+start-center),2)/2*var);
+							weights[i] = 1/Math.sqrt(2*Math.PI)*Math.exp(-1.0* Math.pow((i+start-center),2)/2*var);
 						}
 					}
 					else {
-						weights[i] = 1/Math.sqrt(2*Math.PI)*math.exp(-1.0* math.pow((i+start-center),2)/2*var);
+						weights[i] = 1/Math.sqrt(2*Math.PI)*Math.exp(-1.0* Math.pow((i+start-center),2)/2*var);
 					}
 				}
 				
@@ -138,8 +139,7 @@ public class JunchaoTestPlugin implements PlugInFilter {
 		return array;
 	}
 	
-	@Override
-	public void run(ImageProcessor ip) {
+	public void run2(ImageProcessor ip) {
 		// get width and height
 		width = ip.getWidth();
 		height = ip.getHeight();
@@ -365,7 +365,7 @@ public class JunchaoTestPlugin implements PlugInFilter {
 	 *
 	 * @param args unused
 	 */
-	public static void main(String[] args) {
+	public static void main(final String... args) throws Exception {
 		// set the plugins.dir property to make the plugin appear in the Plugins menu
 		Class<?> clazz = JunchaoTestPlugin.class;
 		String url = clazz.getResource("/" + clazz.getName().replace('.', '/') + ".class").toString();
@@ -386,5 +386,11 @@ public class JunchaoTestPlugin implements PlugInFilter {
 		//System.out.println(image);
 		// run the plugin
 		IJ.runPlugIn(clazz.getName(), "");
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		
 	}
 }

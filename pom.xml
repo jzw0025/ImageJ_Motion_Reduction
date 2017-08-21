@@ -14,7 +14,7 @@
 
 	<groupId>up.ophthalmology.ob</groupId>
 	<artifactId>JunchaoTestPlugin</artifactId>
-	<version>v1.0</version>
+	<version>1.0</version>
 
 	<name>Junchao Plugin</name>
 	<description>A Maven project testing an ImageJ Plugin.</description>
@@ -50,10 +50,10 @@
 	</developers>
 	<contributors>
 		<contributor>
-			<name>none</name>
-			<url>none</url>
-			<roles><role>none</role></roles>
-			<properties><id>none</id></properties>
+			<name>Junchao</name>
+			<url>https://github.com/jzw0025?tab=repositories</url>
+			<roles><role>founder</role></roles>
+			<properties><id>opthal</id></properties>
 		</contributor>
 	</contributors>
 
@@ -80,7 +80,7 @@
 
 	<properties>
 		<package-name>com.mycompany.imagej</package-name>
-		<main-class>com.mycompany.imagej.GaussFiltering</main-class>
+		<main-class>up.ophthalmology.ob.JunchaoTestPlugin</main-class>
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.copyrightOwners>My Company, Inc.</license.copyrightOwners>
 	</properties>
@@ -98,4 +98,5 @@
 			<artifactId>imagej</artifactId>
 		</dependency>
 	</dependencies>
+
 </project>
