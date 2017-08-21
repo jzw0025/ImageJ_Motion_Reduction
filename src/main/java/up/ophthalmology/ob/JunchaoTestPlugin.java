@@ -27,6 +27,8 @@ import ij.plugin.filter.PlugInFilter;
 import ij.process.ByteProcessor;
 import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
+import net.imagej.ops.Ops.Copy.Img;
+import ij.plugin.filter.GaussianBlur;
 
 /**
  * A template for processing each pixel of either
@@ -36,6 +38,8 @@ import ij.process.ImageProcessor;
  */
 public class JunchaoTestPlugin implements PlugInFilter {
 	protected ImagePlus image;
+	private ImageProcessor copy_image; //  ImageProcess 'ip' to create ImagePlus image
+	private ImagePlus marking_image;   // ImageProcess 'copy_image' to create ImagePlus marking_image
 	// image property members
 	private static int width;
 	private static int height;
@@ -140,29 +144,13 @@ public class JunchaoTestPlugin implements PlugInFilter {
 		width = ip.getWidth();
 		height = ip.getHeight();
 		
-		(byte[]) ip.getPixels()
+		copy_image = ip.duplicate(); // copy the image for marking the motion.
 		
-		double dc_level = 255;
-		double cutoff = 50;
-        ByteProcessor img = new ByteProcessor(width,height);
-        double value = 0;
-        double distance = 0;
-        int sizex = img.getWidth();
-        int sizey = img.getHeight();
-        int xcenter = (sizex/2)+1;
-        int ycenter = (sizey/2)+1;
-        for (int y = 0; y < sizey; y++){
-            for (int x = 0; x < sizex; x++){
-                distance = Math.abs(x-xcenter)*Math.abs(x-xcenter)+Math.abs(y-ycenter)*Math.abs(y-ycenter);
-                distance = Math.sqrt(distance);
-                value = dc_level*Math.exp((-1*distance*distance)/(1.442695*cutoff*cutoff));
-                img.putPixelValue(x,y,value);
-
-            }
-        }
-
-         ImagePlus img_filter2 = new ImagePlus("2D Filter",img);
-         img_filter2.show();
+		GaussianBlur gb = new GaussianBlur();
+		gb.blurGaussian(copy_image, 1, 1, 0.02);
+		
+        marking_image = new ImagePlus("Marking the Motion Image", copy_image);
+        marking_image.show();
 
 		if (showDialog()) {
 			System.out.println(ip);
@@ -170,7 +158,7 @@ public class JunchaoTestPlugin implements PlugInFilter {
 			//process(image); // this process the image stacks
 			new WaitForUserDialog("User Input Required","Select the Polygon Line, then click OK.").show();
 			
-			Roi roi = image.getRoi(); // filtered image
+			Roi roi = marking_image.getRoi(); // get ROI from marking image
 			
 			if (!(roi!=null && roi.getType()==Roi.POLYLINE))
 				{IJ.error("Straight line selection required."); return;}
@@ -216,7 +204,8 @@ public class JunchaoTestPlugin implements PlugInFilter {
  			float [] pixel_y_float = double2float(pixel_y);
 			
  			PolygonRoi drawline = new PolygonRoi(grid_xc, grid_yc_mean, Roi.POLYLINE);
-			drawline.drawPixels(ip); // ploting the smoothed line onto current image.
+			drawline.drawPixels(copy_image); // ploting the smoothed line onto current image.
+			marking_image.updateAndDraw();
 			
 			for(int i=0; i<pixel_x_float.length; i++) {
 				int location = Math.round(pixel_x_float[i]);
