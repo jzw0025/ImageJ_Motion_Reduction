@@ -222,7 +222,7 @@ public class JunchaoTestPlugin implements PlugInFilter {
 		GenericDialog gd = new GenericDialog("Process pixels");
 
 		// default value is 0.00, 2 digits right of the decimal point
-		gd.addNumericField("Smooth Radius", 0.00,  2);
+		gd.addNumericField("Smooth Radius", 0.00,  5);
 		gd.addStringField("Version", "Test.v1.0");
 
 		gd.showDialog();
