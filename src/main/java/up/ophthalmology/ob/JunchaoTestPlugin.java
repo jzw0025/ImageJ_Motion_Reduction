@@ -140,6 +140,8 @@ public class JunchaoTestPlugin implements PlugInFilter {
 		width = ip.getWidth();
 		height = ip.getHeight();
 		
+		(byte[]) ip.getPixels()
+		
 		double dc_level = 255;
 		double cutoff = 50;
         ByteProcessor img = new ByteProcessor(width,height);
@@ -170,7 +172,7 @@ public class JunchaoTestPlugin implements PlugInFilter {
 			
 			Roi roi = image.getRoi(); // filtered image
 			
-			if (!(roi!=null && roi.getType()==Roi.POLYLINE) )
+			if (!(roi!=null && roi.getType()==Roi.POLYLINE))
 				{IJ.error("Straight line selection required."); return;}
 			
 			FloatPolygon fp_non_inter = ((PolygonRoi) roi).getFloatPolygon();
@@ -389,7 +391,7 @@ public class JunchaoTestPlugin implements PlugInFilter {
 		//ImagePlus image = IJ.openImage("http://imagej.net/images/clown.jpg");
 		//ImagePlus image = IJ.openImage("/Users/junchaowei/Dropbox/try/acute3_OD_V_3x3_0_0001016_reslice-1.tif");
 		
-		ImagePlus image = IJ.openImage();
+		ImagePlus image = IJ.openImage(); // This class field image is initialized by open a file.
 		image.show();
 		
 		//System.out.println(image);
