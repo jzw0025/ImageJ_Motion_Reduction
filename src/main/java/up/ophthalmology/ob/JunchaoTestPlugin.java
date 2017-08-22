@@ -19,7 +19,8 @@ import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
 import ij.IJ;
-import ij.ImageJ;
+//import ij.ImageJ;
+import net.imagej.ImageJ;
 import ij.ImagePlus;
 import ij.gui.GenericDialog;
 import ij.gui.PolygonRoi;
@@ -139,7 +140,22 @@ public class JunchaoTestPlugin implements Command{
 		return array;
 	}
 	
-	public void run2(ImageProcessor ip) {
+	@Override
+	public void run() {
+		
+
+		
+		// open the Clown sample
+		//ImagePlus image = IJ.openImage("http://imagej.net/images/clown.jpg");
+		//ImagePlus image = IJ.openImage("/Users/junchaowei/Dropbox/try/acute3_OD_V_3x3_0_0001016_reslice-1.tif");
+		
+		ImagePlus image = IJ.openImage(); // This class field image is initialized by open a file.
+		image.show();
+		
+		//final ImageJ ij = new ImageJ();
+		//ij.ui().showUI();
+			
+		ImageProcessor ip = image.getStack().getProcessor(1); // get the first slice image
 		// get width and height
 		width = ip.getWidth();
 		height = ip.getHeight();
@@ -213,7 +229,13 @@ public class JunchaoTestPlugin implements Command{
 				displacement.put(location, move); // put pixel displacement into the hashmap
 			}
 			
-			process(image);
+			//process(image);
+			for (int i = 1; i <= image.getStackSize(); i++) {
+				//System.out.println(i);
+				//System.out.println(image.getStack().getProcessor(i));
+				//System.out.println(image.getType());
+				process(image.getStack().getProcessor(i));
+			}
 			image.updateAndDraw();
 		}
 	}
@@ -261,18 +283,19 @@ public class JunchaoTestPlugin implements Command{
 
 	// Select processing method depending on image type
 	public void process(ImageProcessor ip) {
-		int type = image.getType();
-		if (type == ImagePlus.GRAY8)
-			process( (byte[]) ip.getPixels() );
-		else if (type == ImagePlus.GRAY16)
-			process( (short[]) ip.getPixels() );
-		else if (type == ImagePlus.GRAY32)
-			process( (float[]) ip.getPixels() );
-		else if (type == ImagePlus.COLOR_RGB)
-			process( (int[]) ip.getPixels() );
-		else {
-			throw new RuntimeException("not supported");
-		}
+		process( (byte[]) ip.getPixels() );
+//		int type = ip.getType();
+//		if (type == ImagePlus.GRAY8)
+//			process( (byte[]) ip.getPixels() );
+//		else if (type == ImagePlus.GRAY16)
+//			process( (short[]) ip.getPixels() );
+//		else if (type == ImagePlus.GRAY32)
+//			process( (float[]) ip.getPixels() );
+//		else if (type == ImagePlus.COLOR_RGB)
+//			process( (int[]) ip.getPixels() );
+//		else {
+//			throw new RuntimeException("not supported");
+//		}
 	}
 
 	// processing of GRAY8 images
@@ -374,23 +397,18 @@ public class JunchaoTestPlugin implements Command{
 		
 		System.out.println(url);
 		// start ImageJ
-		new ImageJ();
-
+		final ImageJ ij = new ImageJ();
+		ij.ui().showUI();
 		// open the Clown sample
 		//ImagePlus image = IJ.openImage("http://imagej.net/images/clown.jpg");
 		//ImagePlus image = IJ.openImage("/Users/junchaowei/Dropbox/try/acute3_OD_V_3x3_0_0001016_reslice-1.tif");
 		
-		ImagePlus image = IJ.openImage(); // This class field image is initialized by open a file.
-		image.show();
+//		ImagePlus image = IJ.openImage(); // This class field image is initialized by open a file.
+//		image.show();
 		
 		//System.out.println(image);
 		// run the plugin
-		IJ.runPlugIn(clazz.getName(), "");
-	}
-
-	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-		
+		ij.command().run(JunchaoTestPlugin.class, true);
+//		IJ.runPlugIn(clazz.getName(), "");
 	}
 }
