@@ -15,6 +15,10 @@ import org.apache.commons.math.ArgumentOutsideDomainException;
 import org.apache.commons.math.analysis.interpolation.LinearInterpolator;
 import org.apache.commons.math.analysis.polynomials.PolynomialSplineFunction;
 
+import com.jogamp.opengl.GLCapabilities;
+import com.jogamp.opengl.*;
+import com.jogamp.opengl.glu.GLU;
+
 import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
@@ -30,6 +34,8 @@ import ij.plugin.filter.GaussianBlur;
 //import ij.plugin.filter.PlugInFilter;
 import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
+
+
 
 /**
  * A template for processing each pixel of either
