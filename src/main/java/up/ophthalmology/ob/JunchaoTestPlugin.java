@@ -35,8 +35,6 @@ import ij.plugin.filter.GaussianBlur;
 import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 
-
-
 /**
  * A template for processing each pixel of either
  * GRAY8, GRAY16, GRAY32 or COLOR_RGB images.
@@ -169,12 +167,12 @@ public class JunchaoTestPlugin implements Command{
 		copy_image = ip.duplicate(); // copy the image for marking the motion.
 		
 		GaussianBlur gb = new GaussianBlur();
-		gb.blurGaussian(copy_image, 1, 1, 0.02);
+		gb.blurGaussian(copy_image, 1, 1, 0.02); // Gaussian bluring in x,y,z (1,1,0.02) direction
 		
         marking_image = new ImagePlus("Marking the Motion Image", copy_image);
         marking_image.show();
 
-		if (showDialog()) {
+		if (showDialog()) { // run the showing dialog pannel
 			System.out.println(ip);
 			//process(ip); // this process the single image slice
 			//process(image); // this process the image stacks
